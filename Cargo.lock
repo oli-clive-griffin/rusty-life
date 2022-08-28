@@ -5,3 +5,12 @@ version = 3
 [[package]]
 name = "life"
 version = "0.1.0"
+dependencies = [
+ "modular",
+]
+
+[[package]]
+name = "modular"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c2b869408c1be1a4bb10a04220876741ff86dce5b616306ec59ee65fa69c171"

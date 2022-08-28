@@ -1,4 +1,5 @@
 use std::{vec, thread::sleep, time::Duration};
+use modular::*;
 
 const WIDTH: usize = 30;
 
@@ -13,46 +14,58 @@ struct Canvas {
     width: usize,
 }
 
+trait OrZero {
+    fn or_zero(self, not: usize) -> usize;
+}
+
+impl OrZero for usize {
+    fn or_zero(self, not: usize) -> usize {
+        if self == not { 0 } else { self }
+    }
+}
+
 impl Canvas {
     fn tick(&self) -> Canvas {
         let mut new_cells = [Cell::Dead; WIDTH * WIDTH];
         
-        for (i, row) in self.cells.chunks(self.width).enumerate() {
-            for (j, cell) in row.iter().enumerate() {
-                let up = if i == 0 { None } else { Some(i - 1) };
-                let down = if i == self.width - 1 { None } else  {Some(i + 1)};
+        for (i, cell) in self.cells.iter().enumerate() {
+            let nw = (((i+ (WIDTH * WIDTH) - WIDTH - 1) ) % (WIDTH * WIDTH)).or_zero(WIDTH * WIDTH);
+            let n = (((i+ (WIDTH * WIDTH) - WIDTH) ) % (WIDTH * WIDTH)).or_zero(WIDTH * WIDTH);
+            let ne = (((i+ (WIDTH * WIDTH) - WIDTH + 1) ) % (WIDTH * WIDTH)).or_zero(WIDTH * WIDTH);
 
-                let left = if j == 0 { None } else { Some(j - 1) };
-                let right = if j == self.width - 1 { None } else  {Some(j + 1)};
+            let left = (((i+ (WIDTH * WIDTH) - 1) ) % (WIDTH * WIDTH)).or_zero(WIDTH * WIDTH);
+            let right = (((i+ (WIDTH * WIDTH) + 1) ) % (WIDTH * WIDTH)).or_zero(WIDTH * WIDTH);
 
-                let neighbours = match (up, down, left, right) {
-                    (Some(up), Some(down), Some(left), Some(right)) => vec![
-                        &self.cells[(up * self.width) + left],
-                        &self.cells[(up * self.width) + j],
-                        &self.cells[(up * self.width) + right],
+            let sw = (((i+ (WIDTH * WIDTH) + WIDTH - 1) ) % (WIDTH * WIDTH)).or_zero(WIDTH * WIDTH);
+            let s = (((i+ (WIDTH * WIDTH) + WIDTH) ) % (WIDTH * WIDTH)).or_zero(WIDTH * WIDTH);
+            let se = (((i+ (WIDTH * WIDTH) + WIDTH + 1) ) % (WIDTH * WIDTH)).or_zero(WIDTH * WIDTH);
 
-                        &self.cells[(i * self.width) + left],
-                        &self.cells[(i * self.width) + right],
+            let neighbours = [
+                &self.cells[nw],
+                &self.cells[n],
+                &self.cells[ne],
 
-                        &self.cells[(down * self.width) + left],
-                        &self.cells[(down * self.width) + j],
-                        &self.cells[(down * self.width) + right],
-                    ],
-                    _ => vec![],
-                };
+                &self.cells[left],
+                &self.cells[right],
 
-                if neighbours.len() < 8 { continue; }
+                &self.cells[sw],
+                &self.cells[s],
+                &self.cells[se],
+            ];
 
-                let num_alive_neighbours = neighbours.iter().filter(|&&&c| c == Cell::Alive).count();
+            let new_val = {
+                let num_alive_neighbours = neighbours.iter()
+                    .filter(|&&&c| c == Cell::Alive)
+                    .count();
 
-                let new_val = match (cell, num_alive_neighbours) {
+                match (cell, num_alive_neighbours) {
                     (Cell::Alive, 2 | 3) => Cell::Alive,
                     (Cell::Dead, 3) => Cell::Alive,
                     (_, _) => Cell::Dead,
-                };
+                }
+            };
 
-                new_cells[(i * self.width) + j] = new_val;
-            }
+            new_cells[i] = new_val;
 
         }
 
@@ -109,4 +122,3 @@ fn main() {
         canvas = canvas.tick();
     }
 }
-
