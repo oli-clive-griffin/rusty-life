@@ -8,19 +8,33 @@ enum Cell {
     Alive,
 }
 
+impl Display for Cell {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Cell::Dead => write!(f, " "),
+            Cell::Alive => write!(f, "•"),
+        }
+    }
+}
+
 struct Canvas {
     cells: [Cell; WIDTH * WIDTH],
     width: usize,
 }
 
-trait OrZero {
-    fn or_zero(self, not: usize) -> usize;
-}
+impl fmt::Display for Canvas {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let str = self.cells
+            .chunks(self.width)
+            .map(|chunk|
+                    chunk.iter().map(|cell| format!("{}", cell)).collect::<Vec<String>>().join("  ")
+            )
+            .collect::<Vec<String>>()
+            .join("\n");
 
-impl OrZero for usize {
-    fn or_zero(self, not: usize) -> usize {
-        if self == not { 0 } else { self }
+        write!(f, "{}", str)
     }
+
 }
 
 impl Canvas {
@@ -71,24 +85,6 @@ impl Canvas {
     }
 }
 
-impl fmt::Display for Canvas {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.cells
-            .map(|c| c.to_string())
-            .join("  "))
-    }
-
-}
-
-impl Display for Cell {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Cell::Dead => write!(f, " "),
-            Cell::Alive => write!(f, "•"),
-        }
-    }
-}
-
 fn main() {
     let mut cells = [Cell::Dead; WIDTH * WIDTH];
 
@@ -102,9 +98,19 @@ fn main() {
         sleep(Duration::new(0, 80_000_000));
         println!("{}", canvas);
 
-        let asdf = (0..WIDTH).map(|_| "\n".to_string()).collect::<String>();
-        println!("{}", asdf);
+        let gap = (0..WIDTH).map(|_| "\n".to_string()).collect::<String>();
+        println!("{}", gap);
 
         canvas = canvas.tick();
+    }
+}
+
+trait OrZero {
+    fn or_zero(self, not: usize) -> usize;
+}
+
+impl OrZero for usize {
+    fn or_zero(self, not: usize) -> usize {
+        if self == not { 0 } else { self }
     }
 }
