@@ -1,15 +1,21 @@
-use std::{vec, thread::sleep, time::Duration, slice::Windows, collections::btree_map::Iter};
+use std::{vec, thread::sleep, time::Duration};
 
 const WIDTH: usize = 30;
 
+#[derive(Clone, Copy, PartialEq)]
+enum Cell {
+    Dead,
+    Alive,
+}
+
 struct Canvas {
-    cells: Vec<Cell>,
+    cells: [Cell; WIDTH * WIDTH],
     width: usize,
 }
 
 impl Canvas {
     fn tick(&self) -> Canvas {
-        let mut new_cell_vals = vec![false; &self.width * self.width];
+        let mut new_cells = [Cell::Dead; WIDTH * WIDTH];
         
         for (i, row) in self.cells.chunks(self.width).enumerate() {
             for (j, cell) in row.iter().enumerate() {
@@ -37,20 +43,18 @@ impl Canvas {
 
                 if neighbours.len() < 8 { continue; }
 
-                let num_alive_neighbours = neighbours.iter().filter(|&&&c| c.val).count();
+                let num_alive_neighbours = neighbours.iter().filter(|&&&c| c == Cell::Alive).count();
 
-                let new_val = match (cell.val, num_alive_neighbours) {
-                    (true, 2 | 3) => true,
-                    (false, 3) => true,
-                    (_, _) => false,
+                let new_val = match (cell, num_alive_neighbours) {
+                    (Cell::Alive, 2 | 3) => Cell::Alive,
+                    (Cell::Dead, 3) => Cell::Alive,
+                    (_, _) => Cell::Dead,
                 };
 
-                new_cell_vals[(i * self.width) + j] = new_val;
+                new_cells[(i * self.width) + j] = new_val;
             }
 
         }
-
-        let new_cells: Vec<Cell> = new_cell_vals.iter().map(|&val| Cell { val }).collect();
 
         Canvas { cells: new_cells, width: self.width }
     }
@@ -68,28 +72,32 @@ impl Canvas {
 
 }
 
-#[derive(Clone, Copy, Debug)]
-struct Cell {
-    val: bool
-}
-
 impl Cell {
+    fn from_bool(b: bool) -> Cell {
+        match b {
+            true => Cell::Alive,
+            false => Cell::Dead,
+        }
+    }
+
+
     fn to_string(&self) -> &str {
-        match self.val {
-            true => " • ",
-            false => "   ",
+        match self {
+            Cell::Dead => "   ",
+            Cell::Alive => " • ",
         }
     }
 }
 
 fn main() {
-    let mut cells = [false; WIDTH * WIDTH].map(|val| Cell { val }).to_vec();
+    // let mut cells = (0..WIDTH * WIDTH).map(|val| Cell::from_bool(false)).collect();
+    let mut cells = [Cell::Dead; WIDTH * WIDTH];
 
     for (i, j) in [(1, 2), (2, 3), (3, 1), (3, 2), (3, 3)] {
-        cells[i * WIDTH  + j].val = true;
+        cells[i * WIDTH  + j] = Cell::Alive
     }
 
-    let mut canvas = Canvas { cells, width: WIDTH };
+    let mut canvas = Canvas { cells: cells, width: WIDTH };
 
     loop {
         sleep(Duration::new(0, 80_000_000));
