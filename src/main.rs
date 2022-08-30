@@ -1,6 +1,7 @@
-use std::{thread::sleep, time::Duration, fmt::{Display, Formatter, self}};
+use std::{thread::sleep, time::Duration, fmt};
 
 const WIDTH: usize = 30;
+const HEIGHT: usize = 15;
 
 #[derive(Clone, Copy, PartialEq)]
 enum Cell {
@@ -8,28 +9,23 @@ enum Cell {
     Alive,
 }
 
-impl Display for Cell {
+impl fmt::Display for Cell {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Cell::Dead => write!(f, " "),
+            Cell::Dead => write!(f, "."),
             Cell::Alive => write!(f, "•"),
         }
     }
 }
 
 struct Canvas {
-    cells: [Cell; WIDTH * WIDTH],
-    width: usize,
+    rows: [[Cell; WIDTH]; HEIGHT],
 }
 
 impl fmt::Display for Canvas {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let str = self.cells
-            .chunks(self.width)
-            .map(|chunk|
-                    chunk.iter().map(|cell| format!("{}", cell)).collect::<Vec<String>>().join("  ")
-            )
-            .collect::<Vec<String>>()
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let str = self.rows
+            .map(|row| row.map(|cell| format!("{}", cell)).join("  "))
             .join("\n");
 
         write!(f, "{}", str)
@@ -39,78 +35,54 @@ impl fmt::Display for Canvas {
 
 impl Canvas {
     fn tick(&self) -> Canvas {
-        let mut new_cells = [Cell::Dead; WIDTH * WIDTH];
+        let mut new_rows = [[Cell::Dead; WIDTH]; HEIGHT];
         
-        for (i, cell) in self.cells.iter().enumerate() {
-            let nw = ((i+ (WIDTH * WIDTH) - WIDTH - 1) % (WIDTH * WIDTH)).or_zero(WIDTH * WIDTH);
-            let n = ((i+ (WIDTH * WIDTH) - WIDTH) % (WIDTH * WIDTH)).or_zero(WIDTH * WIDTH);
-            let ne = ((i+ (WIDTH * WIDTH) - WIDTH + 1) % (WIDTH * WIDTH)).or_zero(WIDTH * WIDTH);
+        for r in 0..self.rows.len() {
+            for c in 0..self.rows[r].len() {
+                let mut count = 0;
 
-            let left = ((i+ (WIDTH * WIDTH) - 1) % (WIDTH * WIDTH)).or_zero(WIDTH * WIDTH);
-            let right = ((i+ (WIDTH * WIDTH) + 1) % (WIDTH * WIDTH)).or_zero(WIDTH * WIDTH);
+                let min_r: usize = if r == 0 { 0 } else { r-1 };
+                let max_r: usize = if r+1 == HEIGHT { r } else { r+1 };
+                for x in min_r..=max_r {
 
-            let sw = ((i+ (WIDTH * WIDTH) + WIDTH - 1) % (WIDTH * WIDTH)).or_zero(WIDTH * WIDTH);
-            let s = ((i+ (WIDTH * WIDTH) + WIDTH) % (WIDTH * WIDTH)).or_zero(WIDTH * WIDTH);
-            let se = ((i+ (WIDTH * WIDTH) + WIDTH + 1) % (WIDTH * WIDTH)).or_zero(WIDTH * WIDTH);
+                    let min_c: usize = if c == 0 { 0 } else { c-1 };
+                    let max_c: usize = if c+1 == WIDTH { c } else { c+1 };
+                    // println!("{}, {}, {}, {}", min_c, max_c, min_r, max_r);
+                    for y in min_c..=max_c {
+                        if c == y && r == x { continue; }
 
-            let neighbours = [
-                &self.cells[nw],
-                &self.cells[n],
-                &self.cells[ne],
+                        if self.rows[x][y] == Cell::Alive {
+                            count += 1;
+                        };
+                    };
+                };
 
-                &self.cells[left],
-                &self.cells[right],
-
-                &self.cells[sw],
-                &self.cells[s],
-                &self.cells[se],
-            ];
-
-            let new_val = {
-                let num_alive_neighbours = neighbours.iter()
-                    .filter(|&&&c| c == Cell::Alive)
-                    .count();
-
-                match (cell, num_alive_neighbours) {
+                new_rows[r][c] = match (self.rows[r][c], count) {
                     (Cell::Alive, 2 | 3) => Cell::Alive,
                     (Cell::Dead, 3) => Cell::Alive,
                     (_, _) => Cell::Dead,
-                }
+                };
             };
+        };
 
-            new_cells[i] = new_val;
-        }
-
-        Canvas { cells: new_cells, width: self.width }
+        Canvas { rows: new_rows }
     }
 }
 
 fn main() {
-    let mut cells = [Cell::Dead; WIDTH * WIDTH];
+    let mut rows = [[Cell::Dead; WIDTH]; HEIGHT];
 
-    for (i, j) in [(1, 2), (2, 3), (3, 1), (3, 2), (3, 3)] {
-        cells[i * WIDTH  + j] = Cell::Alive
+    for (i, j) in [(3, 4), (4, 5), (5, 3), (5, 4), (5, 5)] {
+        rows[i][j] = Cell::Alive
     }
 
-    let mut canvas = Canvas { cells, width: WIDTH };
+    let mut canvas = Canvas { rows };
 
     loop {
-        sleep(Duration::new(0, 80_000_000));
+        for _ in 0..30 { println!("\n"); }
         println!("{}", canvas);
 
-        let gap = (0..WIDTH).map(|_| "\n".to_string()).collect::<String>();
-        println!("{}", gap);
-
         canvas = canvas.tick();
-    }
-}
-
-trait OrZero {
-    fn or_zero(self, not: usize) -> usize;
-}
-
-impl OrZero for usize {
-    fn or_zero(self, not: usize) -> usize {
-        if self == not { 0 } else { self }
+        sleep(Duration::new(0, 400_000_000));
     }
 }
