@@ -1,7 +1,8 @@
 use std::{thread::sleep, time::Duration, fmt};
 
-const WIDTH: usize = 30;
-const HEIGHT: usize = 15;
+const WIDTH: usize = 50;
+const HEIGHT: usize = 30;
+const MILLIS: u32 = 100;
 
 #[derive(Clone, Copy, PartialEq)]
 enum Cell {
@@ -12,7 +13,7 @@ enum Cell {
 impl fmt::Display for Cell {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Cell::Dead => write!(f, "."),
+            Cell::Dead => write!(f, " "),
             Cell::Alive => write!(f, "•"),
         }
     }
@@ -83,6 +84,6 @@ fn main() {
         println!("{}", canvas);
 
         canvas = canvas.tick();
-        sleep(Duration::new(0, 400_000_000));
+        sleep(Duration::new(0, MILLIS * 1_000_000));
     }
 }
