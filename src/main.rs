@@ -31,32 +31,16 @@ impl fmt::Display for Canvas {
 
         write!(f, "{}", str)
     }
-
 }
 
 impl Canvas {
-    fn tick(&self) -> Canvas {
+    fn tick(&mut self) -> () {
         let mut new_rows = [[Cell::Dead; WIDTH]; HEIGHT];
         
         for r in 0..self.rows.len() {
             for c in 0..self.rows[r].len() {
-                let mut count = 0;
 
-                let min_r: usize = if r == 0 { 0 } else { r-1 };
-                let max_r: usize = if r+1 == HEIGHT { r } else { r+1 };
-                for x in min_r..=max_r {
-
-                    let min_c: usize = if c == 0 { 0 } else { c-1 };
-                    let max_c: usize = if c+1 == WIDTH { c } else { c+1 };
-                    // println!("{}, {}, {}, {}", min_c, max_c, min_r, max_r);
-                    for y in min_c..=max_c {
-                        if c == y && r == x { continue; }
-
-                        if self.rows[x][y] == Cell::Alive {
-                            count += 1;
-                        };
-                    };
-                };
+                let count = self.get_surrounding_count(r, c);
 
                 new_rows[r][c] = match (self.rows[r][c], count) {
                     (Cell::Alive, 2 | 3) => Cell::Alive,
@@ -66,14 +50,39 @@ impl Canvas {
             };
         };
 
-        Canvas { rows: new_rows }
+        *self = Canvas { rows: new_rows };
+    }
+
+    fn get_surrounding_count(&mut self, r: usize, c: usize) -> i32 {
+        let mut count = 0;
+        let row_up = if r == 0 { self.rows.len() - 1 } else { r-1 };
+        let row_down = if r+1 == HEIGHT { 0 } else { r+1 };
+        let col_left = if c == 0 { self.rows[0].len() - 1 } else { c-1 };
+        let col_right = if c+1 == WIDTH { 0 } else { c+1 };
+        let checks = [
+            (row_up, col_left), (row_up, c), (row_up, col_right),
+            (r, col_left), (r, col_right),
+            (row_down, col_left), (row_down, c), (row_down, col_right),
+        ];
+
+        for (x, y) in checks {
+            if c == y && r == x {
+                continue;
+            }
+
+            if self.rows[x][y] == Cell::Alive {
+                count += 1;
+            };
+        };
+
+        return count;
     }
 }
 
 fn main() {
     let mut rows = [[Cell::Dead; WIDTH]; HEIGHT];
 
-    for (i, j) in [(3, 4), (4, 5), (5, 3), (5, 4), (5, 5)] {
+    for (i, j) in [(5, 4), (6, 5), (7, 3), (7, 4), (7, 5)] {
         rows[i][j] = Cell::Alive
     }
 
@@ -83,7 +92,8 @@ fn main() {
         for _ in 0..30 { println!("\n"); }
         println!("{}", canvas);
 
-        canvas = canvas.tick();
+        canvas.tick();
+
         sleep(Duration::new(0, MILLIS * 1_000_000));
     }
 }
