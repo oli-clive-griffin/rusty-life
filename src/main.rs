@@ -50,7 +50,7 @@ impl Canvas {
             };
         };
 
-        *self = Canvas { rows: new_rows };
+        self.rows = new_rows;
     }
 
     fn get_surrounding_count(&mut self, r: usize, c: usize) -> i32 {
